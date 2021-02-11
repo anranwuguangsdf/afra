@@ -2,7 +2,7 @@ import numpy as np
 from afra.pipelines.pipeline import pipe
 from afra.methods.abs import *
 from afra.methods.fit import * 
-from afra.tools.aux import gvec, empcov, jkncov
+from afra.tools.aux import gvec, empcov
 from afra.tools.icy_decorator import icy
 
 @icy
@@ -145,7 +145,7 @@ class abspipe(pipe):
         # empirical cov
         xbp = gvec(abs_bp)
         xfid = gvec(abs_fid)
-        self.covmat = 2.*jkncov(xbp) + jkncov(xfid)
+        self.covmat = 2.*empcov(xbp) + empcov(xfid)
         # null noise
         null_noise = np.zeros((self._ntarget,self._estimator.nmode,1,1),dtype=np.float64)
         if (self._likelihood == 'gauss'):

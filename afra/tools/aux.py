@@ -18,9 +18,9 @@ def empcov(sample):
     assert (n>1 and p>0)
     u = sample-np.mean(sample,axis=0)
     s = np.dot(u.T,u)/(n-1)
-    # with Hartlap correction under condition p<0.12n
-    if (0.12*n > p):
-        s *= (n-1)/(n-p-2)
+    # Hartlap correction under condition p<0.12n
+    #if (0.12*n > p):
+    #    s *= (n-1)/(n-p-2)
     return s
 
 
@@ -44,9 +44,9 @@ def oascov(sample, bsize=1):
     # empirical estimation
     u = sample-np.mean(sample,axis=0)
     s = np.dot(u.T,u)/(n-1)
-    # with Hartlap correction under condition p<0.12n
-    if (0.12*n > p):
-        s *= (n-1)/(n-p-2)
+    # Hartlap correction under condition p<0.12n
+    #if (0.12*n > p):
+    #    s *= (n-1)/(n-p-2)
     # rho is block invariant
     mu = (np.trace(s)/p)
     alpha = np.mean(s**2)
@@ -54,32 +54,6 @@ def oascov(sample, bsize=1):
     denominator = (n+1.)*(alpha-(mu**2)/p)
     rho = 1. if denominator == 0 else min(1., numerator/denominator)
     return (1.-rho)*s+np.kron(np.eye(p//bsize),np.ones((bsize,bsize)))*rho*mu
-
-
-def jkncov(sample):
-    """
-    empirical covariance matrix estimation
-    + jackknife correction
-    + conditional Hartlap correction
-
-    Parameters
-    ---------
-    sample:
-        input sample
-    """
-    assert isinstance(sample,np.ndarray)
-    n,p = sample.shape
-    assert (n>1 and p>0)
-    # empirical
-    u = sample-np.mean(sample,axis=0)
-    s = n*np.dot(u.T,u)/(n-1)
-    # jackknife
-    for i in range(n):
-        s -= np.cov(np.delete(sample,i,0),rowvar=False)*(n-1)/n
-    # with Hartlap correction under condition p<0.12n
-    if (0.12*n > p):
-        s *= (n-1)/(n-p-2)
-    return s
 
 
 def umap(x, r=[0.,1.]):

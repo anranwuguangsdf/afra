@@ -311,7 +311,9 @@ class pstimator(object):
         my  = np.sum(y)/mask_sum
         cxx = np.sum((x-mx)*(x-mx))
         cxy = np.sum((y-my)*(x-mx))
-        a1  = np.nan_to_num(cxy/cxx)
+        a1 = 0.
+        if (cxx != 0):
+            a1 = cxy/cxx
         a0  = my - mx*a1
         rslt[fill] = y - a0 - a1*x
         return rslt
@@ -354,7 +356,9 @@ class pstimator(object):
         my  = np.sum(y)/mask_sum
         cxx = np.sum((x-mx)*(x-mx))
         cxy = np.sum((y-my)*(x-mx))
-        a1  = np.nan_to_num(cxy/cxx)
+        a1 = 0.
+        if (cxx != 0):
+            a1 = cxy/cxx
         a0  = my - mx*a1
         rslt[fill] = y - a0 - a1*x
         return rslt
@@ -402,7 +406,9 @@ class pstimator(object):
         my  = np.sum(y)/mask_sum
         cxx = np.sum((x-mx)*(x-mx))
         cxy = np.sum((y-my)*(x-mx))
-        a1  = np.nan_to_num(cxy/cxx)
+        a1 = 0.
+        if (cxx != 0):
+            a1 = cxy/cxx
         a0  = my - mx*a1
         rslt[0,fill] = y - a0 - a1*x
         # (B mode)
@@ -412,7 +418,9 @@ class pstimator(object):
         my  = np.sum(y)/mask_sum
         cxx = np.sum((x-mx)*(x-mx))
         cxy = np.sum((y-my)*(x-mx))
-        a1  = np.nan_to_num(cxy/cxx)
+        a1 = 0.
+        if (cxx != 0):
+            a1 = cxy/cxx
         a0  = my - mx*a1
         rslt[1,fill] = y - a0 - a1*x
         return rslt

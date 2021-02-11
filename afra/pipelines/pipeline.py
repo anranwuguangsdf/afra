@@ -604,7 +604,7 @@ class pipe(object):
             xnoi = gvec(self._noise_bp)
             # full cov
             ncom = min(self._fiducial_nsamp,self._noise_nsamp)
-            self.covmat = jkncov(xfid[:ncom]+xnoi[:ncom])
+            self.covmat = empcov(xfid[:ncom]+xnoi[:ncom])
 
     def reprocess(self, data):
         """
