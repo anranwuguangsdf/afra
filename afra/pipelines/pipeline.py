@@ -2,7 +2,7 @@ import numpy as np
 from afra.models.fg_models import *
 from afra.models.bg_models import *
 from afra.tools.ps_estimator import pstimator
-from afra.tools.aux import gvec, empcov, jkncov
+from afra.tools.aux import gvec, empcov
 
 
 class pipe(object):
