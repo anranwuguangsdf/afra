@@ -24,38 +24,6 @@ def empcov(sample):
     return s
 
 
-def oascov(sample, bsize=1):
-    """
-    OAS shrinkage covariance matrix estimation
-    + conditional Hartlap correction
-    + block diagonal adjustment
-    
-    Parameters
-    ---------
-    sample:
-        input sample
-    
-    bsize:
-        block size
-    """
-    assert isinstance(sample,np.ndarray)
-    n,p = sample.shape
-    assert (n>1 and p>0)
-    # empirical estimation
-    u = sample-np.mean(sample,axis=0)
-    s = np.dot(u.T,u)/(n-1)
-    # Hartlap correction under condition p<0.12n
-    #if (0.12*n > p):
-    #    s *= (n-1)/(n-p-2)
-    # rho is block invariant
-    mu = (np.trace(s)/p)
-    alpha = np.mean(s**2)
-    numerator = alpha+mu**2
-    denominator = (n+1.)*(alpha-(mu**2)/p)
-    rho = 1. if denominator == 0 else min(1., numerator/denominator)
-    return (1.-rho)*s+np.kron(np.eye(p//bsize),np.ones((bsize,bsize)))*rho*mu
-
-
 def umap(x, r=[0.,1.]):
     """
     Maps x from [0, 1] into the interval [a, b]

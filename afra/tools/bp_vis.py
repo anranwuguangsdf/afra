@@ -56,14 +56,12 @@ def bpvis(targets, modes, freqs, data_bp, fiducial_bp=None, noise_bp=None, best_
             for j in range(i,_nfreq):
                 ax = fig.add_subplot(_nfreq,_nfreq,1+j*_nfreq+i)
                 for k in range(_ntype):
-                    smin = np.mean(fiducial_bp[:,k,:,i,j],axis=0)
-                    sstd = np.std(fiducial_bp[:,k,:,i,j],axis=0)
-                    ax.fill_between(modes,smin+2*sstd,smin-2*sstd,color=cc[k],alpha=0.3)
+                    ax.errorbar(modes,np.mean(fiducial_bp[:,k,:,i,j],axis=0),yerr=np.std(fiducial_bp[:,k,:,i,j],axis=0),marker='o',mfc='none',mec=cc[k])
                 ax.set_title(str(freqs[i])+'x'+str(freqs[j]))
                 ax.set_yscale('log')
         labels = list()
         for t in targets:
-            labels.append(t+' fiducial BP')
+            labels.append(t+' fiducial')
         fig.legend([], labels=labels,loc='upper right',fontsize=15)
         plt.savefig('fiducial_bp.pdf')
     
@@ -78,21 +76,17 @@ def bpvis(targets, modes, freqs, data_bp, fiducial_bp=None, noise_bp=None, best_
         for i in range(_nfreq):
             ax = fig.add_subplot(_nfreq,_nfreq,1+i*(_nfreq+1))
             for k in range(_ntype):
-                smin = np.mean(noise_bp[:,k,:,i,i],axis=0)
-                sstd = np.std(noise_bp[:,k,:,i,i],axis=0)
-                ax.fill_between(modes,smin+2*sstd,smin-2*sstd,color=cc[k],alpha=0.3)
+                ax.errorbar(modes,np.mean(noise_bp[:,k,:,i,i],axis=0),yerr=np.std(noise_bp[:,k,:,i,i],axis=0),marker='o',mfc='none',mec=cc[k])
             ax.set_title(str(freqs[i])+'x'+str(freqs[i]))
             ax.set_yscale('log')
             for j in range(i+1,_nfreq):
                 ax = fig.add_subplot(_nfreq,_nfreq,1+j*_nfreq+i)
                 for k in range(_ntype):
-                    smin = np.mean(noise_bp[:,k,:,i,j],axis=0)
-                    sstd = np.std(noise_bp[:,k,:,i,j],axis=0)
-                    ax.fill_between(modes,smin+2*sstd,smin-2*sstd,color=cc[k],alpha=0.3)
+                    ax.errorbar(modes,np.mean(noise_bp[:,k,:,i,j],axis=0),yerr=np.std(noise_bp[:,k,:,i,j],axis=0),marker='o',mfc='none',mec=cc[k])
                 ax.set_title(str(freqs[i])+'x'+str(freqs[j]))
         labels = list()
         for t in targets:
-            labels.append(t+' noise BP')
+            labels.append(t+' noise')
         fig.legend([], labels=labels,loc='upper right',fontsize=15)
         plt.savefig('noise_bp.pdf')
     
@@ -103,35 +97,34 @@ def bpvis(targets, modes, freqs, data_bp, fiducial_bp=None, noise_bp=None, best_
     for i in range(_nfreq):
         ax = fig.add_subplot(_nfreq,_nfreq,1+i*(_nfreq+1))
         for k in range(_ntype):
-            ax.scatter(modes,data_bp[k,:,i,i],color=cc[k],marker='o')
+            ax.scatter(modes,data_bp[k,:,i,i],color=cc[k],marker='.')
             if best_bp is not None:
-                ax.scatter(modes,best_bp[k,:,i,i],color='k',marker='X')
+                ax.plot(modes,best_bp[k,:,i,i],color='k')
             if fiducial_bp is not None and noise_bp is not None:
-                smin = np.mean(fiducial_bp[:,k,:,i,i],axis=0)+np.mean(noise_bp[:,k,:,i,i],axis=0)
+                smean = data_bp[k,:,i,i]-np.mean(noise_bp[:,k,:,i,i],axis=0)
                 sstd = np.std(fiducial_bp[:,k,:,i,i],axis=0)+np.std(noise_bp[:,k,:,i,i],axis=0)
-                ax.scatter(modes,data_bp[k,:,i,i]-np.mean(noise_bp[:,k,:,i,i],axis=0),color='k',marker='+')
-                ax.fill_between(modes,smin+2*sstd,smin-2*sstd,color=cc[k],alpha=0.3)
+                ax.errorbar(modes,smean,yerr=sstd,marker='o',mfc='none',mec=cc[k])
         ax.set_title(str(freqs[i])+'x'+str(freqs[i]))
         ax.set_yscale('log')
         for j in range(i+1,_nfreq):
             ax = fig.add_subplot(_nfreq,_nfreq,1+j*_nfreq+i)
             for k in range(_ntype):
-                ax.scatter(modes,data_bp[k,:,i,j],color=cc[k],marker='o')
+                ax.scatter(modes,data_bp[k,:,i,j],color=cc[k],marker='.')
                 if best_bp is not None:
-                    ax.scatter(modes,best_bp[k,:,i,j],color='k',marker='X')
+                    ax.plot(modes,best_bp[k,:,i,j],color='k')
                 if fiducial_bp is not None and noise_bp is not None:
-                    smin = np.mean(fiducial_bp[:,k,:,i,j],axis=0)+np.mean(noise_bp[:,k,:,i,j],axis=0)
+                    smean = data_bp[k,:,i,j]-np.mean(noise_bp[:,k,:,i,j],axis=0)
                     sstd = np.std(fiducial_bp[:,k,:,i,j],axis=0)+np.std(noise_bp[:,k,:,i,j],axis=0)
-                    ax.scatter(modes,data_bp[k,:,i,j]-np.mean(noise_bp[:,k,:,i,j],axis=0),color='k',marker='+')
-                    ax.fill_between(modes,smin+2*sstd,smin-2*sstd,color=cc[k],alpha=0.3)
+                    ax.errorbar(modes,smean,yerr=sstd,marker='o',mfc='none',mec=cc[k])
             ax.set_title(str(freqs[i])+'x'+str(freqs[j]))
     labels = list()
+    if best_bp is not None:
+        for t in targets:
+            labels.append(t+' bestfit')
     for t in targets:
-        labels.append(t+' data BP')
-        if best_bp is not None:
-            labels.append(t+' bestfit BP')
-        if fiducial_bp is not None and noise_bp is not None:
-            labels.append(t+' data-noise BP')
-            labels.append(t+' fiducial+noise BP')
+        labels.append(t+' data')
+    if fiducial_bp is not None and noise_bp is not None:
+        for t in targets:
+            labels.append(t+' signal')
     fig.legend([], labels=labels,loc='upper right',fontsize=15)
     plt.savefig('data_bp.pdf')

@@ -543,7 +543,8 @@ class pipe(object):
         # STEP IV-A
         # data PS estimations (with workspace)
         # allocate
-        wsp_dict = dict()
+        wsp_dict = dict()  # data nmt workspace
+        fwsp_dict = dict()  # fiducial nmt workspace
         self.data_bp = np.zeros((self._ntarget,self._estimator.nmode,self._nfreq,self._nfreq),dtype=np.float64)
         for i in range(self._nfreq):
             _fi = self._freqlist[i]
@@ -562,7 +563,6 @@ class pipe(object):
         # fiducial PS estimation 
         if self._fiducial_flag:
             # allocate
-            fwsp_dict = dict()
             self.fiducial_bp = np.zeros((self._fiducial_nsamp,self._ntarget,self._estimator.nmode,self._nfreq,self._nfreq),dtype=np.float64)
             for i in range(self._nfreq):
                 _fi = self._freqlist[i]
@@ -599,12 +599,25 @@ class pipe(object):
                         self._noise_bp[s,:,:,j,i] = np.array(ntmp[1:1+self._ntarget])
         # STEP V
         # fiducial+noise PS covariance matrix
+        # fiducial+noise has to be processed in the pixel doamin, in order to yield a proper cov matrix
         if self._fiducial_flag and self._noise_flag:
-            xfid = gvec(self._fiducial_bp)
-            xnoi = gvec(self._noise_bp)
+            # allocate
+            nfid = np.zeros((self._noise_nsamp,self._ntarget,self._estimator.nmode,self._nfreq,self._nfreq),dtype=np.float64)
+            for s in range(self._noise_nsamp):
+                for i in range(self._nfreq):
+                    _fi = self._freqlist[i]
+                    # auto corr.
+                    ntmp = self._estimator.autoBP(self._fiducials[_fi][s]+self._noises[_fi][s],wsp=fwsp_dict[(i,i)],beams=self._fiducial_beams[_fi])
+                    nfid[s,:,:,i,i] = np.array(ntmp[1:1+self._ntarget])
+                    for j in range(i+1,self._nfreq):
+                        _fj = self._freqlist[j]
+                        # cross corr.
+                        ntmp = self._estimator.crosBP(np.r_[self._fiducials[_fi][s]+self._noises[_fi][s],self._fiducials[_fj][s]+self._noises[_fj][s]],wsp=fwsp_dict[(i,j)],beams=[self._fiducial_beams[_fi],self._fiducial_beams[_fj]])
+                        nfid[s,:,:,i,j] = np.array(ntmp[1:1+self._ntarget])
+                        nfid[s,:,:,j,i] = np.array(ntmp[1:1+self._ntarget])
+            xnfid = gvec(nfid)
             # full cov
-            ncom = min(self._fiducial_nsamp,self._noise_nsamp)
-            self.covmat = empcov(xfid[:ncom]+xnoi[:ncom])
+            self.covmat = empcov(xnfid)
 
     def reprocess(self, data):
         """

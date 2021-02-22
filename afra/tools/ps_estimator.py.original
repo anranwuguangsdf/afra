@@ -44,6 +44,7 @@ class pstimator(object):
         self.nside = nside
         self.aposcale = aposcale
         self.lbin = None
+        self.lcut = None
         self.lmin = lmin
         self.lmax = lmax
         self.mask = mask
