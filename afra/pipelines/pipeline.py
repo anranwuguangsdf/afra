@@ -617,7 +617,7 @@ class pipe(object):
                         nfid[s,:,:,i,j] = np.array(ntmp[1:1+self._ntarget])
                         nfid[s,:,:,j,i] = np.array(ntmp[1:1+self._ntarget])
             # full cov
-            self.covmat = empcov(gvec(nfid))
+            self.covmat = empcov(gvec(nfid),self._ntarget)
 
     def reprocess(self, data):
         """

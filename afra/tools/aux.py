@@ -3,7 +3,7 @@ import healpy as hp
 from scipy.linalg import sqrtm
 
 
-def empcov(sample):
+def empcov(sample,block=None):
     """
     empirical covariance matrix estimation
     + conditional Hartlap correction
@@ -21,6 +21,9 @@ def empcov(sample):
     # Hartlap correction under condition p<0.12n
     #if (0.12*n > p):
     #    s *= (n-1)/(n-p-2)
+    if block is not None:
+        assert isinstance(block, int)
+        s *= np.kron(np.eye(block),np.ones((p//block,p//block)))
     return s
 
 
