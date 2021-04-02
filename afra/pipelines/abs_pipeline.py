@@ -5,6 +5,7 @@ from afra.methods.fit import *
 from afra.tools.aux import gvec, empcov
 from afra.tools.icy_decorator import icy
 
+
 @icy
 class abspipe(pipe):
 
@@ -65,7 +66,7 @@ class abspipe(pipe):
         
         Returns
         -------
-            (Dynesty fitting result)
+            fitting result
         """
         assert isinstance(aposcale, float)
         assert isinstance(psbin, int)

@@ -33,7 +33,10 @@ class fitpipe(pipe):
         self.preprocess(aposcale,psbin,lmin,lmax)
         result = self.analyse(kwargs)
         # visualise data and result
+        # with NaMaster results
         bestpar = result.samples[np.where(result['logl']==max(result['logl']))][0]
+        # with emcee results
+        #bestpar = np.median(result,axis=0)
         bestbp = None
         for i in range(len(bestpar)):
             if self._foreground_obj is not None:

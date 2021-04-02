@@ -2,6 +2,7 @@ import numpy as np
 from afra.tools.aux import umap, gvec, hvec
 from afra.models.fg_models import fgmodel
 from afra.models.bg_models import bgmodel
+import emcee
 from dynesty import NestedSampler
 from afra.tools.icy_decorator import icy
 
@@ -156,20 +157,35 @@ class fit(object):
                 assert (len(pdict[name]) == 2)
                 self._paramrange.update({name: pdict[name]})
 
-    def run(self, kwargs=dict()):
+    def run(self, kwargs={'nwalker':100,'nstep':10000}):
         self._activelist = set(self._params.keys())
         if self._background is not None:
             self._activelist -= set(self._background.blacklist)
         if self._foreground is not None:
             self._activelist -= set(self._foreground.blacklist)
+        # emcee sampler
+        #sampler = emcee.EnsembleSampler(kwargs['nwalker'], len(self._activelist), self._core_likelihood)
+        #state = sampler.run_mcmc(np.random.uniform(size=(kwargs['nwalker'],len(self._activelist))), kwargs['nstep']//10)  # burn-in
+        #sampler.reset()
+        #state = sampler.run_mcmc(state, kwargs['nstep'])
+        #tau = int(np.mean(sampler.get_autocorr_time()))  # estimate integral auto-correlation time
+        #if (kwargs['nstep'] < 50*tau):  # if the pre-set step is not enough
+        #    sampler.reset()
+        #    sampler.run_mcmc(state, 100*tau)
+        #results = sampler.get_chain(discard=10*tau, flat=True)
+        #names = sorted(self._activelist)
+        #for i in range(len(names)):
+        #    low, high = self.paramrange[names[i]]
+        #    results[:,i] = umap(results[:,i], [low, high])
+        #return results
+        # dynesty sampler
         sampler = NestedSampler(self._core_likelihood,self.prior,len(self._activelist),**kwargs)
         sampler.run_nested()
         results = sampler.results
         names = sorted(self._activelist)
         for i in range(len(names)):
             low, high = self.paramrange[names[i]]
-            for j in range(len(results.samples)):
-                results.samples[j, i] = umap(results.samples[j, i], [low, high])
+            results.samples[:,i] = umap(results.samples[:,i], [low, high])
         return results
 
     def _core_likelihood(self, cube):

@@ -104,12 +104,12 @@ class ncmbmodel(bgmodel):
 
     def initlist(self):
         """parameters are set as
-        - bandpower "bp_c_x", exponential index of amplitude
+        - bandpower "cmb_x", exponential index of amplitude
         """
         plist = list()
         for t in self._estimator._targets:
             for j in range(len(self._estimator._modes)):
-                plist.append('bp_c_'+t+'_'+'{:.2f}'.format(self._estimator._modes[j]))
+                plist.append('cmb_'+t+'{}'.format(j))
         return plist
 
     def initrange(self):
@@ -146,12 +146,12 @@ class ncmbmodel(bgmodel):
         fiducial_bp = np.zeros((self._estimator._ntarget,self._estimator._nmode),dtype=np.float64)
         for t in range(self._estimator._ntarget):
             for l in range(self._estimator._nmode):
-                    fiducial_bp[t,l] = self._params['bp_c_'+self._estimator._targets[t]+'_'+'{:.2f}'.format(self._estimator._modes[l])]
+                    fiducial_bp[t,l] = self._params['cmb_'+self._estimator._targets[t]+'{}'.format(l)]
         fiducial_bp = self._estimator.filtrans(fiducial_bp)
         bp_out = np.ones((self._estimator._ntarget,self._estimator._nmode,self._nfreq,self._nfreq),dtype=np.float64)
         for t in range(self._estimator._ntarget):
             for l in range(self._estimator._nmode):
-                bp_out[t,l] *= fiducial_bp[t,l]
+                bp_out[t,l] = fiducial_bp[t,l]
         return bp_out
 
 
@@ -221,5 +221,5 @@ class acmbmodel(bgmodel):
         bp_out = np.ones((self._estimator._ntarget,self._estimator._nmode,self._nfreq,self._nfreq),dtype=np.float64)
         for t in range(self._estimator._ntarget):
             for l in range(self._estimator._nmode):
-                bp_out[t,l] *= fiducial_bp[t,l]
+                bp_out[t,l] = fiducial_bp[t,l]
         return bp_out

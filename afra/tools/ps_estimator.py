@@ -21,7 +21,7 @@ class pstimator(object):
             Apodization size in deg.
         
         psbin : (positive) integer
-            Number of angular modes for each PS bin.
+            Number of multipole bins.
         
         lmin : (positive) integer
             Minimal angular mode.
@@ -147,6 +147,7 @@ class pstimator(object):
 
     @lbin.setter
     def lbin(self, lbin):
+        "# of bin width of original bin"
         if lbin is None:
             self._lbin = 5
         else:
@@ -156,6 +157,7 @@ class pstimator(object):
 
     @lcut.setter
     def lcut(self, lcut):
+        "# of original bins on each side get trimed out of [lmin,lmax]"
         if lcut is None:
             self._lcut = 5
         else:
@@ -165,8 +167,9 @@ class pstimator(object):
 
     @lmin.setter
     def lmin(self, lmin):
+        "lower limit of multipole"
         if lmin is None:
-            self._lmin = 2
+            self._lmin = 2+25  # consider default lbin*lcut
         else:
             assert isinstance(lmin, int)
             assert (lmin < 3*self._nside)
@@ -174,6 +177,7 @@ class pstimator(object):
 
     @lmax.setter
     def lmax(self, lmax):
+        "upper limit of multipole"
         if lmax is None:
             self._lmax = self._nside
         else:
@@ -185,7 +189,8 @@ class pstimator(object):
     def b(self, b):
         if b is None:
             """customize NaMaster multipole band object"""
-            ell_ini = np.arange((self._lmax-self._lmin)//self._lbin)*self._lbin + self._lmin
+            ell_ini = np.arange((self._lmax-self._lmin+2*self._lbin*self._lcut)//self._lbin)*self._lbin + (self._lmin - self._lbin*self._lcut)
+            assert (ell_ini[0] > 1)
             ell_end = ell_ini + self._lbin
             self._b = nmt.NmtBin.from_edges(ell_ini, ell_end, is_Dell=True)
             self.lmax = self._b.lmax  # correct lmax
@@ -199,7 +204,7 @@ class pstimator(object):
             self.modes = self.rebinning(self._b.get_effective_ells())
         else:
             assert isinstance(psbin, int)
-            assert (psbin > 0 and psbin < (self._lmax-self._lmin)//self._lbin - 2*self._lcut)
+            assert (psbin > 0 and psbin <= (self._lmax-self._lmin)//self._lbin)
             self._psbin = psbin
             self.modes = self.rebinning(self._b.get_effective_ells())
 

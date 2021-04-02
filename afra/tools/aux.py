@@ -71,7 +71,6 @@ def gvec(cps):
     nmode = cps.shape[-3]
     ntype = cps.shape[-4]
     dof = nfreq*(nfreq+1)//2  # distinctive elements at each mode
-    dof_arr = np.arange(dof)
     triu_idx = np.triu_indices(nfreq)
     if (cps.ndim == 4):  # single sample
         rslt = np.zeros(ntype*nmode*dof)

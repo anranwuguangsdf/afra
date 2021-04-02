@@ -18,48 +18,53 @@ class pipe(object):
 
         data : dict
             Measured data maps,
-            should be arranged in type {frequency (GHz): (map #, pixel #)}.
+            should be arranged in form {frequency (GHz): (map #, pixel #)}.
 
         noises : dict
             Simulated noise map samples,
-            should be arranged in type: {frequency (GHz): (sample #, map #, pixel #)}.
+            should be arranged in form: {frequency (GHz): (sample #, map #, pixel #)}.
 
         fiducials : numpy.array
             Simulated fiducial map samples,
-            should be arranged in type {frequency: (sample #, map #, pixel #)}.
+            should be arranged in form {frequency: (sample #, map #, pixel #)}.
 
         mask : numpy.ndarray
             Single mask map,
-            should be arranged in shape: (1, pixel #).
+            should be arranged in form (1, pixel #).
 
         beams : dict
             FWHM of gaussian beams for each frequency.
 
         fiducials : dict
             Fiducial map dict,
-            should be arranged in form: {frequency: (sample #, map #, pixel #)}.
+            should be arranged in form {frequency: (sample #, map #, pixel #)}.
 
         fiducial_beams : dict
             Fiducial map fwhm dict,
-            should be arranged in form: {frequency: fwhm}.
+            should be arranged in form {frequency: fwhm}.
 
         templates : dict
             Template map dict,
-            should be arranged in form: {frequency: (map #, pixel #)}.
+            should be arranged in form {frequency: (map #, pixel #)}.
 
         template_noises : dict
             Template noise map dict,
-            should be arranged in form: {frequency: (sample #, map #, pixel #)}.
+            should be arranged in form {frequency: (sample #, map #, pixel #)}.
 
         template_beams : dict
             Template map fwhm dict,
-            should be arranged in form: {frequency: fwhm}.
+            should be arranged in form {frequency: fwhm}.
 
         targets : str
             Choosing among 'T', 'E' and 'B', 'EB', 'TEB'.
+            'T': T mode only
+            'E': E mode only
+            'B': B mode only
+            'EB': E and B modes, without EB mode
+            'TEB': T,E and B modes, without TE,TB,EB modes
 
         likelihood : str
-            likelihood type, can be either 'gauss' or 'hl'.
+            likelihood type, should be either 'gauss' or 'hl'.
 
         foreground : str
             foreground model name, chosen among "dust", "sync", "syncdust".
@@ -68,7 +73,7 @@ class pipe(object):
             background model name, chosen among "acmb", "ncmb".
 
         filt : dict
-            filtering matrix for CMB (from original to filted),
+            filtering matrix for CMB band-power (from original to filted),
             entry name should contain "targets".
         """
         # measurements
@@ -106,8 +111,6 @@ class pipe(object):
         self.estimator = None
         # filtering matrix dict
         self.filt = filt
-        # debugging flag
-        self.debug = False
         # covariance matrix
         self.covmat = None
 
@@ -162,10 +165,6 @@ class pipe(object):
     @property
     def ntarget(self):
         return self._ntarget
-
-    @property
-    def debug(self):
-        return self._debug
 
     @property
     def beams(self):
@@ -396,11 +395,6 @@ class pipe(object):
                 for name in self._template_freqlist:
                     self._template_beams[name] = None
 
-    @debug.setter
-    def debug(self, debug):
-        assert isinstance(debug, bool)
-        self._debug = debug
-
     @filt.setter
     def filt(self, filt):
         if filt is not None:
@@ -498,10 +492,10 @@ class pipe(object):
         ----------
 
         aposcale : float
-            Apodization scale.
+            Apodization scale in deg.
 
         psbin : integer
-            Number of angular modes in each bin,
+            Number of bins,
             for conducting pseudo-PS estimation.
 
         lmin/lmax : integer
@@ -617,7 +611,7 @@ class pipe(object):
                         nfid[s,:,:,i,j] = np.array(ntmp[1:1+self._ntarget])
                         nfid[s,:,:,j,i] = np.array(ntmp[1:1+self._ntarget])
             # full cov
-            self.covmat = empcov(gvec(nfid),self._ntarget)
+            self.covmat = empcov(gvec(nfid))#,self._ntarget)
 
     def reprocess(self, data):
         """

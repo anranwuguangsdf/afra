@@ -1,4 +1,4 @@
-### documentation for AFRA
+## AFRA documentation
 
 ### design
 
