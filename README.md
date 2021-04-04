@@ -1,4 +1,4 @@
-# afra
+# AFRA
 
 AliCPT foreground removal analysis.
 

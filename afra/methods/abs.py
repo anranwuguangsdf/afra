@@ -7,8 +7,6 @@ class abssep(object):
     
     def __init__(self, data, noise=None, sigma=None, shift=None, threshold=None):
         """
-        ABS class initialization function.
-        
         Parameters:
         -----------
         
