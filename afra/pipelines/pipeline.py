@@ -7,7 +7,7 @@ from afra.tools.aux import gvec, empcov
 
 class pipe(object):
 
-    def __init__(self, data, noises=None, mask=None, beams=None, targets='T', 
+    def __init__(self, data, noises=None, mask=None, beams=None, targets=('TT',),
                  fiducials=None, fiducial_beams=None,
                  templates=None, template_noises=None, template_beams=None,
                  foreground=None, background=None,
@@ -55,13 +55,14 @@ class pipe(object):
             Template map fwhm dict,
             should be arranged in form {frequency: fwhm}.
 
-        targets : str
-            Choosing among 'T', 'E' and 'B', 'EB', 'TEB'.
-            'T': T mode only
-            'E': E mode only
-            'B': B mode only
-            'EB': E and B modes, without EB mode
-            'TEB': T,E and B modes, without TE,TB,EB modes
+        targets : tuple
+            Tuple consists of 'TT', 'TE', 'TB', 'EE', 'EB', 'BB'.
+            'TT': TT spectra
+            'EE': EE spectra
+            'BB': BB spectra
+            'TE': TE spectra
+            'TB': TB spectra
+            'EB': EB spectra
 
         likelihood : str
             likelihood type, should be either 'gauss' or 'hl'.
@@ -323,7 +324,7 @@ class pipe(object):
 
     @targets.setter
     def targets(self, targets):
-        assert isinstance(targets, str)
+        assert isinstance(targets, tuple)
         self._targets = targets
         self._ntarget = len(self._targets)
 

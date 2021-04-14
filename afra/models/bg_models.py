@@ -163,9 +163,9 @@ class acmbmodel(bgmodel):
         self.paramlist = self.initlist()
         self.paramrange = self.initrange()
         self.paramdft = self.initdft()
-        if not ('E' in self._estimator.targets):
+        if not ('EE' in self._estimator.targets):
             self._blacklist.append('AE')
-        if not ('B' in self._estimator.targets):
+        if not ('BB' in self._estimator.targets):
             self._blacklist.append('r')
             self._blacklist.append('AL')
         # calculate camb template CMB PS with default parameters
@@ -207,7 +207,7 @@ class acmbmodel(bgmodel):
         return pdft
 
     def bandpower(self):
-        enum = {'T':[0],'E':[1],'B':[2],'EB':[1,2],'TEB':[0,1,2]}
+        enum = {('TT',):[0],('EE',):[1],('BB',):[2],('EE','BB'):[1,2]}
         # fast process for recalculating with new r
         inflation_params = camb.initialpower.InitialPowerLaw()
         inflation_params.set_params(As=2e-9,ns=0.965,r=self._params['r'])

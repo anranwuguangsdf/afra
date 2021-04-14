@@ -8,7 +8,7 @@ from afra.tools.icy_decorator import icy
 @icy
 class fitpipe(pipe):
     
-    def __init__(self, data, noises=None, mask=None, beams=None, targets='T',
+    def __init__(self, data, noises=None, mask=None, beams=None, targets=('TT',),
                  fiducials=None, fiducial_beams=None,
                  templates=None, template_noises=None, template_beams=None,
                  foreground=None, background=None,

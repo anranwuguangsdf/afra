@@ -138,9 +138,11 @@ class abssep(object):
         DL = DL/RL_tensor + np.einsum('ijk,i->ijk',f_tensor,self._shift)
         # find eign at each angular mode
         BL = np.zeros(self._lsize)
+        info = dict()
         for ell in range(self._lsize):
             # eigvec[:,i] corresponds to eigval[i]
             eigval, eigvec = np.linalg.eig(DL[ell])
+            info[ell] = (eigval, eigvec)
             tmp = 0
             if self._threshold is None:
                 for i in range(self._fsize):
@@ -153,26 +155,4 @@ class abssep(object):
                         G = np.dot(f[ell], eigvec[:,i])
                         tmp += (G**2/eigval[i])
             BL[ell] = (1.0/tmp - self._shift[ell])
-        return BL
-
-    def run_info(self):
-        # binned average, converted to band power
-        DL = self._data.copy()
-        RL = np.ones((self._lsize,self._fsize),dtype=np.float64)
-        RL_tensor = np.ones((self._lsize,self._fsize,self._fsize),dtype=np.float64)
-        if self._noise_flag:
-            DL -= self._noise  # DL = DL - NL
-            RL = np.sqrt(self._sigma)
-            RL_tensor = np.einsum('ij,ik->ijk',RL,RL)
-        # prepare CMB f(ell, freq)
-        f = np.ones((self._lsize,self._fsize), dtype=np.float64)/RL
-        f_tensor = np.ones((self._lsize,self._fsize,self._fsize), dtype=np.float64)/RL_tensor
-        # Dl_ij = Dl_ij/sqrt(sigma_li,sigma_lj) + shift*f_li*f_lj/sqrt(sigma_li,sigma_lj)
-        DL = DL/RL_tensor + np.einsum('ijk,i->ijk',f_tensor,self._shift)
-        # find eign at each angular mode
-        info = dict()
-        for ell in range(self._lsize):
-            # eigvec[:,i] corresponds to eigval[i]
-            eigval, eigvec = np.linalg.eig(DL[ell])
-            info[ell] = (eigval, eigvec)
-        return info
+        return (BL, info)

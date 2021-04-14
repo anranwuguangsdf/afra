@@ -9,7 +9,7 @@ from afra.tools.icy_decorator import icy
 @icy
 class abspipe(pipe):
 
-    def __init__(self, data, noises=None, mask=None, beams=None, targets='T',
+    def __init__(self, data, noises=None, mask=None, beams=None, targets=('TT',),
                  fiducials=None, fiducial_beams=None,
                  templates=None, template_noises=None, template_beams=None,
                  foreground=None,background=None,
@@ -109,9 +109,7 @@ class abspipe(pipe):
         self.absrslt = np.zeros((self._ntarget,self._estimator.nmode),dtype=np.float64)
         for t in range(self._ntarget):
             spt = abssep(self._data_bp[t],shift=None,threshold=None)
-            self._absrslt[t] = spt.run()
-            if self._debug:
-                self._absinfo[self._targets[t]] = spt.run_info()
+            self._absrslt[t], self._absinfo[self._targets[t]] = spt.run()
 
     def analyse_noisy(self, shift, threshold):
         # get noise PS mean and rms
@@ -132,9 +130,7 @@ class abspipe(pipe):
             for t in range(self._ntarget):
                 # send PS to ABS method
                 spt = abssep(ndat[s,t],noise_mean[t],noise_std_diag[t],shift=safe_shift[t],threshold=threshold)
-                self.absrslt[s,t] = spt.run()
-                if self._debug:
-                    self.absinfo[self._targets[t]] = spt.run_info()
+                self.absrslt[s,t], self.absinfo[self._targets[t]] = spt.run()
 
     def postprocess(self, kwargs=dict()):
         # force nfreq=1

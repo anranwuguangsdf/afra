@@ -21,7 +21,6 @@ For Gaussian and HL likelihood, we design two derived classes `gaussfit` and `hl
 | function name | description |
 |:--------------|:------------|
 | **run** | run ABS analysis on given **data** and **noise** |
-| **run\_info** | run ABS analysis but return eigen values and vectors |
 
 > base class `fit` **attribute** list:
 
@@ -43,7 +42,7 @@ For Gaussian and HL likelihood, we design two derived classes `gaussfit` and `hl
 |:--------------|:------------|
 | **rerange** | redefine parameters sampling range |
 | **run** | run Bayesian analysis |
-| **_core_likelihood** | calculate loglikelihood given sample position |
+| **\_core\_likelihood** | calculate loglikelihood given sample position |
 | **prior** | define Bayesian piror mapping |
 
 > derived class `gaussfit` **function** list:

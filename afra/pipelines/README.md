@@ -21,7 +21,7 @@ The derived pipeline classes inherit base class' methods and create their own sp
 | **freqlist** | list of frequencies |
 | **nside** | HEALPix Nside of maps |
 | **npix** | HEALPix Npix of maps |
-| **targets** | band-power estimation targets list |
+| **targets** | band-power estimation targets tuple |
 | **ntarget** | number of targets |
 | **beams** | FWHM of measured maps' beams |
 | **filt** | CMB hamonic-domain filtering matrix |

@@ -37,7 +37,7 @@ Except the "ps\_estimator" which defines the `pstimator` class for band-power es
 | **psbin** | number of rebinning bins |
 | **modes** | list of final multipole bins' central position |
 | **nmode** | number of final multipole bins |
-| **targets** | band-power estimation targets list |
+| **targets** | band-power estimation targets tuple |
 | **ntarget** | number of targets |
 | **filt** | CMB hamonic-domain filtering matrix |
 

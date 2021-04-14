@@ -31,7 +31,7 @@ def bpvis(targets, modes, freqs, data_bp, fiducial_bp=None, noise_bp=None, best_
         best-fit bandpower matrix
     """
     
-    assert isinstance(targets, str)
+    assert isinstance(targets, tuple)
     _ntype = len(targets)
     cc = ['red', 'blue', 'orange'][:_ntype]  # colors
     assert isinstance(modes, (list,tuple,np.ndarray))

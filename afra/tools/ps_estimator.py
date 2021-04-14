@@ -7,7 +7,7 @@ from afra.tools.icy_decorator import icy
 @icy
 class pstimator(object):
 
-    def __init__(self, nside, mask=None, aposcale=None, psbin=None, lmin=None, lmax=None, lbin=None, lcut=None, targets='T', filt=None):
+    def __init__(self, nside, mask=None, aposcale=None, psbin=None, lmin=None, lmax=None, lbin=None, lcut=None, targets=('TT',), filt=None):
         """
         Parameters
         ----------
@@ -35,8 +35,8 @@ class pstimator(object):
         lcut : (positive) integer
             Ignoring the first and last number of bins from NaMaster results.
         
-        targets : string
-            Choosing among 'T', 'E', 'B', 'EB', 'TEB' mode.
+        targets : tuple
+            Tuple consists of 'TT', 'TE', 'TB', 'EE', 'EB', 'BB'.
 
         filt : dict
             filtering effect in BP, recording extra mixing/rescaling of BP
@@ -52,8 +52,8 @@ class pstimator(object):
         self.psbin = psbin
         self.targets = targets
         self.filt = filt
-        self._autodict = {'T':self.autoBP_T,'E':self.autoBP_E,'B':self.autoBP_B,'EB':self.autoBP_EB,'TEB':self.autoBP_TEB}
-        self._crosdict = {'T':self.crosBP_T,'E':self.crosBP_E,'B':self.crosBP_B,'EB':self.crosBP_EB,'TEB':self.autoBP_TEB}
+        self._autodict = {('TT',):self.autoBP_TT,('EE',):self.autoBP_EE,('BB',):self.autoBP_BB,('EE','BB'):self.autoBP_EnB}
+        self._crosdict = {('TT',):self.crosBP_TT,('EE',):self.crosBP_EE,('BB',):self.crosBP_BB,('EE','BB'):self.crosBP_EnB}
 
     @property
     def nside(self):
@@ -216,7 +216,7 @@ class pstimator(object):
 
     @targets.setter
     def targets(self, targets):
-        assert isinstance(targets, str)
+        assert isinstance(targets, tuple)
         self._targets = targets
         self._ntarget = len(targets)
 
@@ -522,7 +522,7 @@ class pstimator(object):
         # select among T, E and B
         return self._crosdict[self._targets](_cleaned,wsp,beams)
 
-    def autoBP_T(self, maps, wsp=None, beams=None):
+    def autoBP_TT(self, maps, wsp=None, beams=None):
         dat = maps[0]
         # assemble NaMaster fields
         if beams is None:
@@ -538,7 +538,7 @@ class pstimator(object):
             cl00 = wsp.decouple_cell(cl00c)
             return (self._modes, self.rebinning(cl00[0]))
 
-    def crosBP_T(self, maps, wsp=None, beams=[None,None]):
+    def crosBP_TT(self, maps, wsp=None, beams=[None,None]):
         dat1 = maps[0]
         dat2 = maps[3]
         # assemble NaMaster fields
@@ -559,7 +559,7 @@ class pstimator(object):
             cl00 = wsp.decouple_cell(cl00c)
             return (self._modes, self.rebinning(cl00[0]))
 
-    def autoBP_E(self, maps, wsp=None, beams=None):
+    def autoBP_EE(self, maps, wsp=None, beams=None):
         dat = self.purified_e(maps)
         # assemble NaMaster fields
         if beams is None:
@@ -575,7 +575,7 @@ class pstimator(object):
             cl00 = wsp.decouple_cell(cl00c)
             return (self._modes, self.rebinning(cl00[0]))
 
-    def crosBP_E(self, maps, wsp=None, beams=[None,None]):
+    def crosBP_EE(self, maps, wsp=None, beams=[None,None]):
         dat1 = self.purified_e(maps[:3])
         dat2 = self.purified_e(maps[3:])
         # assemble NaMaster fields
@@ -596,7 +596,7 @@ class pstimator(object):
             cl00 = wsp.decouple_cell(cl00c)
             return (self._modes, self.rebinning(cl00[0]))
 
-    def autoBP_B(self, maps, wsp=None, beams=None):
+    def autoBP_BB(self, maps, wsp=None, beams=None):
         dat = self.purified_b(maps)
         # assemble NaMaster fields
         if beams is None:
@@ -612,7 +612,7 @@ class pstimator(object):
             cl00 = wsp.decouple_cell(cl00c)
             return (self._modes, self.rebinning(cl00[0]))
 
-    def crosBP_B(self, maps, wsp=None, beams=[None,None]):
+    def crosBP_BB(self, maps, wsp=None, beams=[None,None]):
         dat1 = self.purified_b(maps[:3])
         dat2 = self.purified_b(maps[3:])
         # assemble NaMaster fields
@@ -633,7 +633,7 @@ class pstimator(object):
             cl00 = wsp.decouple_cell(cl00c)
             return (self._modes, self.rebinning(cl00[0]))
 
-    def autoBP_EB(self, maps, wsp=None, beams=None):
+    def autoBP_EnB(self, maps, wsp=None, beams=None):
         dat = self.purified_eb(maps)
         # assemble NaMaster fields
         if beams is None:
@@ -654,7 +654,7 @@ class pstimator(object):
             cl00_b = wsp.decouple_cell(cl00c_b)
             return (self._modes, self.rebinning(cl00_e[0]), self.rebinning(cl00_b[0]))
 
-    def crosBP_EB(self, maps, wsp=None, beams=[None,None]):
+    def crosBP_EnB(self, maps, wsp=None, beams=[None,None]):
         dat1 = self.purified_eb(maps[:3])
         dat2 = self.purified_eb(maps[3:])
         # assemble NaMaster fields
@@ -682,8 +682,4 @@ class pstimator(object):
             cl00_b = wsp.decouple_cell(cl00c_b)
             return (self._modes, self.rebinning(cl00_e[0]), self.rebinning(cl00_b[0]))
 
-    def autoBP_TEB(self, maps, wsp=None, beams=None):
-        pass
-
-    def crosBP_TEB(self, maps, wsp=None, beams=[None,None]):
-        pass
+# end
