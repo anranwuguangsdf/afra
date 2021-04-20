@@ -13,8 +13,8 @@ class abspipe(pipe):
                  fiducials=None, fiducial_beams=None,
                  templates=None, template_noises=None, template_beams=None,
                  foreground=None,background=None,
-                 likelihood='gauss', filt=None):
-        super(abspipe, self).__init__(data,noises,mask,beams,targets,fiducials,fiducial_beams,templates,template_noises,template_beams,None,background,likelihood,filt)
+                 likelihood='gauss', solver='dynesty', filt=None):
+        super(abspipe, self).__init__(data,noises,mask,beams,targets,fiducials,fiducial_beams,templates,template_noises,template_beams,None,background,likelihood,solver,filt)
         # analyse select dict
         self._anadict = {True:self.analyse_noisy, False:self.analyse_quiet}
         # Bayesian engine, to be assigned
@@ -146,9 +146,9 @@ class abspipe(pipe):
         # null noise
         null_noise = np.zeros((self._ntarget,self._estimator.nmode,1,1),dtype=np.float64)
         if (self._likelihood == 'gauss'):
-            self._engine = gaussfit(np.mean(abs_bp,axis=0),np.mean(abs_fid,axis=0),null_noise,self._covmat,self._background_obj)
+            self._engine = gaussfit(np.mean(abs_bp,axis=0),np.mean(abs_fid,axis=0),null_noise,self._covmat,self._background_obj,None,self._solver)
         elif (self._likelihood == 'hl'):
-            self._engine = hlfit(np.mean(abs_bp,axis=0),np.mean(abs_fid,axis=0),null_noise,self._covmat,self._background_obj)
+            self._engine = hlfit(np.mean(abs_bp,axis=0),np.mean(abs_fid,axis=0),null_noise,self._covmat,self._background_obj,None,self._solver)
         if (len(self._paramrange)):
             self._engine.rerange(self._paramrange)
         rslt = self._engine.run(kwargs)

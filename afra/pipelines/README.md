@@ -46,6 +46,7 @@ The derived pipeline classes inherit base class' methods and create their own sp
 | **paramrange** | parameter sampling ranges |
 | **estimator** | band-power estimatior instance |
 | **covmat** | covariance matrix for CMB fiducial+noise band-power matrix |
+| **solver** | (Bsyesian) solver name |
 
 > base class `pipe` **function** list:
 

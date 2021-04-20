@@ -35,6 +35,8 @@ For Gaussian and HL likelihood, we design two derived classes `gaussfit` and `hl
 | **params** | model parameter dictionary |
 | **paramrange** | parameter sampling range dictionary |
 | **activelist** | list of free (to be constrained) parameter names |
+| **solver** | (Bayesian) solver name |
+| **\_rundict** | dictionary of "run" routine |
 
 > base class `fit` **function** list:
 
@@ -42,6 +44,9 @@ For Gaussian and HL likelihood, we design two derived classes `gaussfit` and `hl
 |:--------------|:------------|
 | **rerange** | redefine parameters sampling range |
 | **run** | run Bayesian analysis |
+| **run\_emcee** | run emcee routine |
+| **run\_minuit** | run minuit routine |
+| **run\_dynesty** | run dynesty routine |
 | **\_core\_likelihood** | calculate loglikelihood given sample position |
 | **prior** | define Bayesian piror mapping |
 
@@ -50,6 +55,7 @@ For Gaussian and HL likelihood, we design two derived classes `gaussfit` and `hl
 | function name | description |
 |:--------------|:------------|
 | **loglikeli** | loglikelihood calculator required by Bayesian sampler |
+| **lsq** | chi-square calculator required by Bayesian sampler |
 
 > derived class `hlfit` **function** list:
 
@@ -57,3 +63,4 @@ For Gaussian and HL likelihood, we design two derived classes `gaussfit` and `hl
 |:--------------|:------------|
 | **offset** | modified HL offset for **noise** |
 | **loglikeli** | loglikelihood calculator required by Bayesian sampler |
+| **lsq** | chi-square calculator required by Bayesian sampler |

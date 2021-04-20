@@ -12,8 +12,8 @@ class fitpipe(pipe):
                  fiducials=None, fiducial_beams=None,
                  templates=None, template_noises=None, template_beams=None,
                  foreground=None, background=None,
-                 likelihood='gauss', filt=None):
-        super(fitpipe, self).__init__(data,noises,mask,beams,targets,fiducials,fiducial_beams,templates,template_noises,template_beams,foreground,background,likelihood,filt)
+                 likelihood='gauss', solver='dynesty', filt=None):
+        super(fitpipe, self).__init__(data,noises,mask,beams,targets,fiducials,fiducial_beams,templates,template_noises,template_beams,foreground,background,likelihood,solver,filt)
         # analyse select dict
         self._anadict = {'gauss':self.analyse_gauss, 'hl':self.analyse_hl}
         # Bayesian engine to be assigned
@@ -50,7 +50,6 @@ class fitpipe(pipe):
         else:
             bestbp = self._foreground_obj.bandpower() + self._background_obj.bandpower()
         bpvis(self._targets,self._estimator._modes,self._freqlist,self._data_bp,self._fiducial_bp,self._noise_bp,bestbp)
-        #
         return result
 
     def analyse(self, kwargs=dict()):
@@ -58,7 +57,7 @@ class fitpipe(pipe):
 
     def analyse_gauss(self, kwargs=dict()):
         # gauss likelihood
-        self.engine = gaussfit(self._data_bp,np.mean(self._fiducial_bp,axis=0),np.mean(self._noise_bp,axis=0),self._covmat,self._background_obj,self._foreground_obj)
+        self.engine = gaussfit(self._data_bp,np.mean(self._fiducial_bp,axis=0),np.mean(self._noise_bp,axis=0),self._covmat,self._background_obj,self._foreground_obj,self._solver)
         if (len(self._paramrange)):
             self._engine.rerange(self._paramrange)
         result = self._engine.run(kwargs)
@@ -70,7 +69,7 @@ class fitpipe(pipe):
         offset_bp = np.mean(self._noise_bp,axis=0)  # effecive offset (1503.01347, 2010.01139)
         for l in range(offset_bp.shape[1]):
             offset_bp[:,l,:,:] *= np.sqrt(self._estimator.modes[l]+0.5)
-        self.engine = hlfit(self._data_bp,np.mean(self._fiducial_bp,axis=0),np.mean(self._noise_bp,axis=0),self._covmat,self._background_obj,self._foreground_obj,offset_bp)
+        self.engine = hlfit(self._data_bp,np.mean(self._fiducial_bp,axis=0),np.mean(self._noise_bp,axis=0),self._covmat,self._background_obj,self._foreground_obj,self._solver,offset_bp)
         if (len(self._paramrange)):
             self._engine.rerange(self._paramrange)
         result = self._engine.run(kwargs)

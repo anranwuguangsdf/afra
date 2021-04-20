@@ -11,7 +11,7 @@ class pipe(object):
                  fiducials=None, fiducial_beams=None,
                  templates=None, template_noises=None, template_beams=None,
                  foreground=None, background=None,
-                 likelihood='gauss', filt=None):
+                 likelihood='gauss', solver='dynesty', filt=None):
         """
         Parameters
         ----------
@@ -76,6 +76,9 @@ class pipe(object):
         filt : dict
             filtering matrix for CMB band-power (from original to filted),
             entry name should contain "targets".
+
+        solver : str
+            Bayesian solver name.
         """
         # measurements
         self.data = data
@@ -110,6 +113,8 @@ class pipe(object):
         self.paramrange = dict()
         # ps estimator, to be assigned
         self.estimator = None
+        # solver name
+        self.solver = solver
         # filtering matrix dict
         self.filt = filt
         # covariance matrix
@@ -270,6 +275,10 @@ class pipe(object):
     @property
     def covmat(self):
         return self._covmat
+
+    @property
+    def solver(self):
+        return self._solver
 
     @data.setter
     def data(self, data):
@@ -484,6 +493,11 @@ class pipe(object):
             assert (covmat.shape[0] == self._ntarget*self._estimator.nmode*self._nfreq*(self._nfreq+1)//2)
             assert (covmat.shape[1] == covmat.shape[0])
         self._covmat = covmat
+
+    @solver.setter
+    def solver(self, solver):
+        assert (solver in ('minuit','dynesty','emcee'))
+        self._solver = solver
 
     def preprocess(self, aposcale, psbin, lmin=None, lmax=None):
         """

@@ -3,13 +3,14 @@ from afra.tools.aux import umap, gvec, hvec
 from afra.models.fg_models import fgmodel
 from afra.models.bg_models import bgmodel
 import emcee
-from dynesty import NestedSampler
+from iminuit import Minuit
+from dynesty import DynamicNestedSampler
 from afra.tools.icy_decorator import icy
 
 
 class fit(object):
 
-    def __init__(self, data, fiducial, noise, covariance, background=None, foreground=None):
+    def __init__(self, data, fiducial, noise, covariance, background=None, foreground=None, solver='dynesty'):
         """
         Parameters
         ----------
@@ -30,6 +31,9 @@ class fit(object):
 
         foreground : fgmodel object
             foreground model instance
+
+        solver : str
+            Fitting solver options, chosen from 'minuit', 'dynesty' and 'emcee'.
         """
         self.data = data
         self.fiducial = fiducial
@@ -42,6 +46,8 @@ class fit(object):
         self.foreground = foreground
         if (self._foreground is None and self._background is None):
             raise ValueError('no activated model')
+        self.solver = solver
+        self._rundict = {'minuit':self.run_minuit,'emcee':self.run_emcee,'dynesty':self.run_dynesty}
 
     @property
     def data(self):
@@ -78,6 +84,10 @@ class fit(object):
     @property
     def activelist(self):
         return self._activelist
+
+    @property
+    def solver(self):
+        return self._solver
 
     @data.setter
     def data(self, data):
@@ -149,6 +159,11 @@ class fit(object):
             self._params.update(self._background.params)
             self._paramrange.update(self._background.paramrange)
 
+    @solver.setter
+    def solver(self, solver):
+        assert (solver in ('minuit','dynesty','emcee'))
+        self._solver = solver
+
     def rerange(self, pdict):
         assert isinstance(pdict, dict)
         for name in pdict:
@@ -157,31 +172,50 @@ class fit(object):
                 assert (len(pdict[name]) == 2)
                 self._paramrange.update({name: pdict[name]})
 
-    def run(self, kwargs={'nwalker':100,'nstep':10000}):
+    def run(self, kwargs):
         self._activelist = set(self._params.keys())
         if self._background is not None:
             self._activelist -= set(self._background.blacklist)
         if self._foreground is not None:
             self._activelist -= set(self._foreground.blacklist)
-        # emcee sampler
-        #sampler = emcee.EnsembleSampler(kwargs['nwalker'], len(self._activelist), self._core_likelihood)
-        #state = sampler.run_mcmc(np.random.uniform(size=(kwargs['nwalker'],len(self._activelist))), kwargs['nstep']//10)  # burn-in
-        #sampler.reset()
-        #state = sampler.run_mcmc(state, kwargs['nstep'])
-        #tau = int(np.mean(sampler.get_autocorr_time()))  # estimate integral auto-correlation time
-        #if (kwargs['nstep'] < 50*tau):  # if the pre-set step is not enough
-        #    sampler.reset()
-        #    sampler.run_mcmc(state, 100*tau)
-        #results = sampler.get_chain(discard=10*tau, flat=True)
-        #names = sorted(self._activelist)
-        #for i in range(len(names)):
-        #    low, high = self.paramrange[names[i]]
-        #    results[:,i] = umap(results[:,i], [low, high])
-        #return results
-        # dynesty sampler
-        sampler = NestedSampler(self._core_likelihood,self.prior,len(self._activelist),**kwargs)
-        sampler.run_nested()
-        results = sampler.results
+        return self._rundict[self._solver](kwargs)
+
+    def run_minuit(self, kwargs={}):
+        solver = Minuit(self._core_lsq, [0.5]*len(self._activelist), name=sorted(self._activelist))
+        solver.limits = (0.,1.)
+        solver.migrad()
+        best = np.array(solver.values)
+        solver.minos()
+        err = np.array(solver.errors)
+        names = sorted(self._activelist)
+        for i in range(len(names)):
+            low, high = self.paramrange[names[i]]
+            best[i] = umap(best[i], [low, high])
+            err[i] = umap(err[i], [low, high])
+        return (best, err)
+
+    def run_emcee(self, kwargs={'nwalker':100,'nstep':10000}):
+        # emcee solver
+        solver = emcee.EnsembleSampler(kwargs['nwalker'], len(self._activelist), self._core_likelihood)
+        state = solver.run_mcmc(np.random.uniform(size=(kwargs['nwalker'],len(self._activelist))), kwargs['nstep']//10)  # burn-in
+        solver.reset()
+        state = solver.run_mcmc(state, kwargs['nstep'])
+        tau = int(np.mean(solver.get_autocorr_time()))  # estimate integral auto-correlation time
+        if (kwargs['nstep'] < 50*tau):  # if the pre-set step is not enough
+            solver.reset()
+            solver.run_mcmc(state, 100*tau)
+        results = solver.get_chain(discard=10*tau, flat=True)
+        names = sorted(self._activelist)
+        for i in range(len(names)):
+            low, high = self.paramrange[names[i]]
+            results[:,i] = umap(results[:,i], [low, high])
+        return results
+
+    def run_dynesty(self, kwargs={}):
+        # dynesty solver
+        solver = DynamicNestedSampler(self._core_likelihood,self.prior,len(self._activelist))
+        solver.run_nested(**kwargs)
+        results = solver.results
         names = sorted(self._activelist)
         for i in range(len(names)):
             low, high = self.paramrange[names[i]]
@@ -207,6 +241,25 @@ class fit(object):
         else:
             return self.loglikeli(self._foreground.bandpower() + self._background.bandpower())
 
+    def _core_lsq(self, cube):
+        if np.any(cube > 1.) or np.any(cube < 0.):
+-            return np.nan_to_num(np.inf)
+        name_list = sorted(self._activelist)
+        for i in range(len(name_list)):
+            name = name_list[i]
+            tmp = umap(cube[i], self._paramrange[name])
+            if self._foreground is not None:
+                self._foreground.reset({name: tmp})
+            if self._background is not None:
+                self._background.reset({name: tmp})
+        # predict data
+        if self._foreground is None:
+            return self.lsq(self._background.bandpower())
+        elif self._background is None:
+            return self.lsq(self._foreground.bandpower())
+        else:
+            return self.lsq(self._foreground.bandpower() + self._background.bandpower())
+
     def prior(self, cube):
         return cube  # flat prior
 
@@ -214,8 +267,8 @@ class fit(object):
 @icy
 class gaussfit(fit):
 
-    def __init__(self, data, fiducial, noise, covariance, background=None, foreground=None):
-        super(gaussfit, self).__init__(data,fiducial,noise,covariance,background,foreground)
+    def __init__(self, data, fiducial, noise, covariance, background=None, foreground=None, solver='dynesty'):
+        super(gaussfit, self).__init__(data,fiducial,noise,covariance,background,foreground,solver)
 
     def loglikeli(self, predicted):
         assert (predicted.shape == self._data.shape)
@@ -227,12 +280,22 @@ class gaussfit(fit):
             return np.nan_to_num(-np.inf)
         return logl
 
+    def lsq(self, predicted):
+        assert (predicted.shape == self._data.shape)
+        diff = gvec(predicted+self._noise-self._data)
+        if (np.isnan(diff).any()):
+            raise ValueError('encounter nan')
+        chi = np.vdot(diff,np.linalg.lstsq(self._covariance,diff,rcond=None)[0])
+        if np.isnan(chi):
+            return np.nan_to_num(np.inf)
+        return chi
+
 
 @icy
 class hlfit(fit):
 
-    def __init__(self, data, fiducial, noise, covariance, background=None, foreground=None, offset=None):
-        super(hlfit, self).__init__(data,fiducial,noise,covariance,background,foreground)
+    def __init__(self, data, fiducial, noise, covariance, background=None, foreground=None, solver='dynesty', offset=None):
+        super(hlfit, self).__init__(data,fiducial,noise,covariance,background,foreground,solver)
         self.offset = offset
 
     @property
@@ -258,3 +321,13 @@ class hlfit(fit):
         if np.isnan(logl):
             return np.nan_to_num(-np.inf)
         return logl
+
+    def lsq(self, predicted):
+        assert (predicted.shape == self._data.shape)
+        diff = hvec(predicted+self._noise+self._offset,self._data+self._offset,self._fiducial+self._noise+self._offset)
+        if (np.isnan(diff).any()):
+            raise ValueError('encounter nan')
+        chi = np.vdot(diff,np.linalg.lstsq(self._covariance,diff,rcond=None)[0])
+        if np.isnan(chi):
+            return np.nan_to_num(np.inf)
+        return chi
