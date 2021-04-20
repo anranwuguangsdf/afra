@@ -243,7 +243,7 @@ class fit(object):
 
     def _core_lsq(self, cube):
         if np.any(cube > 1.) or np.any(cube < 0.):
--            return np.nan_to_num(np.inf)
+            return np.nan_to_num(np.inf)
         name_list = sorted(self._activelist)
         for i in range(len(name_list)):
             name = name_list[i]
