@@ -1,7 +1,6 @@
 import numpy as np
 from afra.pipelines.pipeline import pipe
 from afra.methods.fit import *
-from afra.tools.bp_vis import bpvis
 from afra.tools.icy_decorator import icy
 
 
@@ -33,11 +32,23 @@ class fitpipe(pipe):
         self.preprocess(aposcale,psbin,lmin,lmax)
         result = self.analyse(kwargs)
         # visualise data and result
-        # with NaMaster results
-        bestpar = result.samples[np.where(result['logl']==max(result['logl']))][0]
-        # with emcee results
-        #bestpar = np.median(result,axis=0)
+        bestpar = None
         bestbp = None
+        if self._solver == 'dynesty':
+            from dynesty import plotting as dyplot
+            fig,ax = dyplot.cornerplot(result,labels=self._paramlist,quantiles=[0.025, 0.5, 0.975],color='midnightblue',title_fmt='.3f',show_titles=1,smooth=0.04)
+            plt.savefig('posterior.pdf')
+            bestpar = result.samples[np.where(result['logl']==max(result['logl']))][0]
+        elif self._solver == 'emcee':
+            import corner
+            fig = corner.corner(result,labels=self._paramlist);
+            plt.savefig('posterior.pdf')
+            bestpar = np.median(result,axis=0)
+        elif self._solver == 'minuit':
+            print ('params: {}\n bestfit: {}\n stderr: {}'.format(self._paramlist,result[0],result[1]))
+            bestpar = result[0]
+        else:
+            raise ValueError('unsupported solver: {}'.format(self._solver))
         for i in range(len(bestpar)):
             if self._foreground_obj is not None:
                 self._foreground_obj.reset({self._paramlist[i]: bestpar[i]})
@@ -49,7 +60,8 @@ class fitpipe(pipe):
             bestbp = self._foreground_obj.bandpower()
         else:
             bestbp = self._foreground_obj.bandpower() + self._background_obj.bandpower()
-        bpvis(self._targets,self._estimator._modes,self._freqlist,self._data_bp,self._fiducial_bp,self._noise_bp,bestbp)
+        self.plot_result(bestbp)
+        self.plot_residule(bestbp)
         return result
 
     def analyse(self, kwargs=dict()):
@@ -75,3 +87,5 @@ class fitpipe(pipe):
         result = self._engine.run(kwargs)
         self._paramlist = sorted(self._engine.activelist)
         return result
+
+# end

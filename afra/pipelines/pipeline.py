@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from afra.models.fg_models import *
 from afra.models.bg_models import *
 from afra.tools.ps_estimator import pstimator
@@ -626,7 +627,7 @@ class pipe(object):
                         nfid[s,:,:,i,j] = np.array(ntmp[1:1+self._ntarget])
                         nfid[s,:,:,j,i] = np.array(ntmp[1:1+self._ntarget])
             # full cov
-            self.covmat = empcov(gvec(nfid))#,self._ntarget)
+            self.covmat = empcov(gvec(nfid))
 
     def reprocess(self, data):
         """
@@ -647,3 +648,132 @@ class pipe(object):
                 stmp = self._estimator.crosBP(np.r_[data[_fi],data[_fj]],beams=[self._beams[_fi],self._beams[_fj]])
                 self._data_bp[:,:,i,j] = np.array(stmp[1:1+self._ntarget])
                 self._data_bp[:,:,j,i] = np.array(stmp[1:1+self._ntarget])
+
+    def plot_data(self):
+        cc = ['firebrick', 'midnightblue', 'darkorange'][:self._ntarget]
+        fig = plt.figure(figsize=(5*self._nfreq,5*self._nfreq))
+        for i in range(self._nfreq):
+            for j in range(i,self._nfreq):
+                ax = fig.add_subplot(self._nfreq,self._nfreq,1+j*self._nfreq+i)
+                ax.set_title(str(self._freqlist[i])+'x'+str(self._freqlist[j]),fontsize=15)
+                ax.tick_params(axis='both',which='major',labelsize='15')
+                ax.set_yscale('log')
+                for k in range(self._ntarget):
+                    ax.scatter(self._estimator.modes,self._data_bp[k,:,i,j],marker='o',s=20,c=cc[k])
+        labels = list()
+        for t in self._targets:
+            labels.append('{} data'.format(t))
+        fig.legend([], labels=labels,loc='upper right',fontsize=15)
+        plt.savefig('data_bp.pdf')
+
+    def plot_fiducial(self):
+        cc = ['firebrick', 'midnightblue', 'darkorange'][:self._ntarget]
+        fig = plt.figure(figsize=(5*self._nfreq,5*self._nfreq))
+        for i in range(self._nfreq):
+            for j in range(i,self._nfreq):
+                ax = fig.add_subplot(self._nfreq,self._nfreq,1+j*self._nfreq+i)
+                ax.set_title(str(self._freqlist[i])+'x'+str(self._freqlist[j]),fontsize=15)
+                ax.tick_params(axis='both',which='major',labelsize='15')
+                ax.set_yscale('log')
+                for k in range(self._ntarget):
+                    ax.errorbar(self._estimator.modes,np.mean(self._fiducial_bp[:,k,:,i,j],axis=0),yerr=np.std(self._fiducial_bp[:,k,:,i,j],axis=0),fmt='o',ms=10,mfc='none',mec=cc[k])
+        labels = list()
+        for t in self._targets:
+            labels.append('{} fiducial'.format(t))
+        fig.legend([], labels=labels,loc='upper right',fontsize=15)
+        plt.savefig('fiducial_bp.pdf')
+
+    def plot_noise(self):
+        cc = ['firebrick', 'midnightblue', 'darkorange'][:self._ntarget]
+        fig = plt.figure(figsize=(5*self._nfreq,5*self._nfreq))
+        for i in range(self._nfreq):
+            ax = fig.add_subplot(self._nfreq,self._nfreq,1+i*(self._nfreq+1))
+            ax.tick_params(axis='both',which='major',labelsize='15')
+            ax.set_title(str(self._freqlist[i])+'x'+str(self._freqlist[i]),fontsize=15)
+            ax.set_yscale('log')
+            for k in range(self._ntarget):
+                ax.errorbar(self._estimator.modes,np.mean(self._noise_bp[:,k,:,i,i],axis=0),yerr=np.std(self._noise_bp[:,k,:,i,i],axis=0),fmt='o',ms=10,mfc='none',mec=cc[k])
+            for j in range(i+1,self._nfreq):
+                ax = fig.add_subplot(self._nfreq,self._nfreq,1+j*self._nfreq+i)
+                ax.set_title(str(self._freqlist[i])+'x'+str(self._freqlist[j]))
+                for k in range(self._ntarget):
+                    ax.errorbar(self._estimator.modes,np.mean(self._noise_bp[:,k,:,i,j],axis=0),yerr=np.std(self._noise_bp[:,k,:,i,j],axis=0),fmt='o',ms=10,mfc='none',mec=cc[k])
+        labels = list()
+        for t in self._targets:
+            labels.append('{} noise'.format(t))
+        fig.legend([], labels=labels,loc='upper right',fontsize=15)
+        plt.savefig('noise_bp.pdf')
+
+    def plot_template(self):
+        cc = ['firebrick', 'midnightblue', 'darkorange'][:self._ntarget]
+        fig = plt.figure(figsize=(5*self._template_nfreq,5))
+        for i in range(self._template_nfreq):
+            ax = fig.add_subplot(self._template_nfreq,1,1+i)
+            ax.set_title(str(self._template_freqlist[i]),fontsize=15)
+            ax.tick_params(axis='both',which='major',labelsize='15')
+            ax.set_yscale('log')
+            for k in range(self._ntarget):
+                ax.scatter(self._estimator.modes,self._template_bp[k],marker='o',s=20,c=cc[k])
+        labels = list()
+        for t in self._targets:
+            labels.append('{} template'.format(t))
+        fig.legend([], labels=labels,loc='upper right',fontsize=15)
+        plt.savefig('template_bp.pdf')
+
+    def plot_result(self, best_bp):
+        cc = ['firebrick', 'midnightblue', 'darkorange'][:self._ntarget]
+        fig = plt.figure(figsize=(5*self._nfreq,5*self._nfreq))
+        for i in range(self._nfreq):
+            ax = fig.add_subplot(self._nfreq,self._nfreq,1+i*(self._nfreq+1))
+            ax.set_title(str(self._freqlist[i])+'x'+str(self._freqlist[i]))
+            ax.set_yscale('log')
+            for k in range(self._ntarget):
+                ax.plot(self._estimator.modes,best_bp[k,:,i,i],ls='--',lw=2,color='k')
+                smean = self._data_bp[k,:,i,i]-np.mean(self._noise_bp[:,k,:,i,i],axis=0)
+                sstd = np.std(self._fiducial_bp[:,k,:,i,i],axis=0)+np.std(self._noise_bp[:,k,:,i,i],axis=0)
+                ax.errorbar(self._estimator.modes,smean,yerr=sstd,fmt='o',ms=10,mfc='none',mec=cc[k])
+            for j in range(i+1,self._nfreq):
+                ax = fig.add_subplot(self._nfreq,self._nfreq,1+j*self._nfreq+i)
+                ax.set_title(str(self._freqlist[i])+'x'+str(self._freqlist[j]))
+                for k in range(self._ntarget):
+                    ax.plot(self._estimator.modes,best_bp[k,:,i,j],color='k')
+                    smean = self._data_bp[k,:,i,j]-np.mean(self._noise_bp[:,k,:,i,j],axis=0)
+                    sstd = np.std(self._fiducial_bp[:,k,:,i,j],axis=0)+np.std(self._noise_bp[:,k,:,i,j],axis=0)
+                    ax.errorbar(self._estimator.modes,smean,yerr=sstd,fmt='o',ms=10,mfc='none',mec=cc[k])
+        labels = list()
+        for t in self._targets:
+            labels.append('{} bestfit'.format(t))
+        for t in self._targets:
+            labels.append('{} signal'.format(t))
+        fig.legend([], labels=labels,loc='upper right',fontsize=15)
+        plt.savefig('result_bp.pdf')
+
+    def plot_residule(self, best_bp):
+        cc = ['firebrick', 'midnightblue', 'darkorange'][:self._ntarget]
+        fig = plt.figure(figsize=(5*self._nfreq,5*self._nfreq))
+        for i in range(self._nfreq):
+            ax = fig.add_subplot(self._nfreq,self._nfreq,1+i*(self._nfreq+1))
+            ax.set_title(str(self._freqlist[i])+'x'+str(self._freqlist[i]))
+            ax.set_yscale('log')
+            for k in range(self._ntarget):
+                rmean = self._data_bp[k,:,i,i]-np.mean(self._noise_bp[:,k,:,i,i],axis=0)-best_bp[k,:,i,i]
+                sstd = np.std(self._fiducial_bp[:,k,:,i,i],axis=0)+np.std(self._noise_bp[:,k,:,i,i],axis=0)
+                ax.errorbar(self._estimator.modes,np.mean(self._fiducial_bp[:,k,:,i,i],axis=0),yerr=sstd,fmt='o',ms=10,mfc='none',mec=cc[k])
+                ax.plot(self._estimator.modes,rmean,ls='--',lw=2,color='grey')
+            for j in range(i+1,self._nfreq):
+                ax = fig.add_subplot(self._nfreq,self._nfreq,1+j*self._nfreq+i)
+                ax.set_title(str(self._freqlist[i])+'x'+str(self._freqlist[j]))
+                for k in range(self._ntarget):
+                    rmean = self._data_bp[k,:,i,j]-np.mean(self._noise_bp[:,k,:,i,j],axis=0)-best_bp[k,:,i,j]
+                    sstd = np.std(self._fiducial_bp[:,k,:,i,j],axis=0)+np.std(self._noise_bp[:,k,:,i,j],axis=0)
+                    ax.errorbar(self._estimator.modes,np.mean(self._fiducial_bp[:,k,:,i,j],axis=0),yerr=sstd,fmt='o',ms=10,mfc='none',mec=cc[k])
+                    ax.plot(self._estimator.modes,rmean,ls='--',lw=2,color='grey')
+        labels = list()
+        for t in self._targets:
+            labels.append('{} residual'.format(t))
+        for t in self._targets:
+            labels.append('{} fiducial'.format(t))
+        fig.legend([], labels=labels,loc='upper right',fontsize=15)
+        plt.savefig('residual_bp.pdf')
+
+# end

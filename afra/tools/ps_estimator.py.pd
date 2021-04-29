@@ -489,7 +489,6 @@ class pstimator(object):
         assert (maps.shape == (3,self._npix))
         _cleaned = maps.copy()
         _cleaned[:,self._mask==0.] = 0.  # !!!
-        # select among T, E and B
         return self._autodict[self._targets](_cleaned,wsp,beams)
 
     def crosBP(self, maps, wsp=None, beams=[None,None]):
@@ -519,7 +518,6 @@ class pstimator(object):
         assert (len(beams) == 2)
         _cleaned = maps.copy()
         _cleaned[:,self._mask==0.] = 0.  # !!!
-        # select among T, E and B
         return self._crosdict[self._targets](_cleaned,wsp,beams)
 
     def autoBP_TT(self, maps, wsp=None, beams=None):

@@ -78,7 +78,31 @@ class abspipe(pipe):
         # method selection
         self.analyse(shift, threshold)
         # post analysis
-        return self.postprocess(kwargs)
+        result = self.postprocess(kwargs)
+        # visualise data and result
+        bestpar = None
+        bestbp = None
+        if self._solver == 'dynesty':
+            from dynesty import plotting as dyplot
+            fig,ax = dyplot.cornerplot(result,labels=self._paramlist,quantiles=[0.025, 0.5, 0.975],color='midnightblue',title_fmt='.3f',show_titles=1,smooth=0.04)
+            plt.savefig(os.path.join(os.getcwd(),'posterior.pdf'))
+            bestpar = result.samples[np.where(result['logl']==max(result['logl']))][0]
+        elif self._solver == 'emcee':
+            import corner
+            fig = corner.corner(result,labels=self._paramlist);
+            plt.savefig(os.path.join(os.getcwd(),'posterior.pdf'))
+            bestpar = np.median(result,axis=0)
+        elif self._solver == 'minuit':
+            print ('params: {}\n bestfit: {}\n stderr: {}'.format(self._paramlist,rslt[0],rslt[1]))
+            bestpar = result[0]
+        else:
+            raise ValueError('unsupported solver: {}'.format(self._solver))
+        for i in range(len(bestpar)):
+            self._background_obj.reset({self._paramlist[i]: bestpar[i]})
+            bestbp = self._background_obj.bandpower()
+        self.plot_result(bestbp)
+        self.plot_residule(bestbp)
+        return result
 
     def run_absonly(self, aposcale, psbin, lmin=None, lmax=None, shift=None, threshold=None):
         """
@@ -154,3 +178,5 @@ class abspipe(pipe):
         rslt = self._engine.run(kwargs)
         self._paramlist = sorted(self._engine.activelist)
         return rslt
+
+# end
