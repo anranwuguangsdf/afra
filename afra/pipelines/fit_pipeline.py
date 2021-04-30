@@ -1,8 +1,8 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from afra.pipelines.pipeline import pipe
 from afra.methods.fit import *
 from afra.tools.icy_decorator import icy
-
 
 @icy
 class fitpipe(pipe):
