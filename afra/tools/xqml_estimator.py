@@ -17,7 +17,7 @@ import pymaster as nmt
 class QMLestimator(object):
 
     def __init__(self, nsimu, clth, nside, qml_nside, aposcale=None, noiseA=None, noiseB=None, pixwin=False, mask=None,  \
-                         lmin=None, lmax=None, lbin=None, targets='EB',muKarcmin=0.1, bell=None ):
+                         lmin=None, lmax=None, lbin=None, targets='EB',muKarcmin=0.1, fwhm=0.0 ):
 
         """
         Parameters
@@ -64,8 +64,8 @@ class QMLestimator(object):
         self.aposcale   = aposcale
         self.mask       = mask
         self.clth       = clth
-        self.pixwin     = pixwin
-        self.bell       = bell
+        self.fwhm       = fwhm
+        self._pixwin     = pixwin
     # # Initialise targets-ralated parameters ######################################################            
         self.targets = targets
         self._modedict = {'T':['TT'],'E':['EE'],'B':['BB'],'EB':['EE','BB'],'TEB':['TT','EE','BB']}        
@@ -100,7 +100,7 @@ class QMLestimator(object):
         else:
             NB=NA
 
-        self.estimator=xqml.xQML(self._qml_mask,self._ellbins,self.clth,NA=NA,NB=NB,lmax=3*self._qml_nside,spec=self._spec,pixwin=self._pixwin,bell=self.bell,fwhm=0.0)
+        self.estimator=xqml.xQML(self._qml_mask,self._ellbins,self.clth,NA=NA,NB=NB,lmax=3*self._qml_nside,spec=self._spec,pixwin=self._pixwin,bell=self._bell,fwhm=0.0)
     
     @property
     def nsimu(self):
@@ -139,6 +139,10 @@ class QMLestimator(object):
         return self._lmax
 
     @property
+    def fwhm(self):
+        return self._fwhm
+
+    @property
     def modes(self):
         return self._modes
         
@@ -157,10 +161,6 @@ class QMLestimator(object):
     @property
     def modedict(self):
         return self._modedict
-
-    @property
-    def pixwin(self):
-        return self._pixwin
 
     @nsimu.setter
     def nsimu(self, nsimu):
@@ -235,15 +235,27 @@ class QMLestimator(object):
             else:
                 print("lmax has been changed to 2*qml_nside")
                 self._lmax = 2*self._qml_nside
+
+    @fwhm.setter
+    def fwhm(self, fwhm):
+        if fwhm == 0.0:
+            self._fwhm = fwhm
+            bl=np.ones(3*self._qml_nside+1)
+            l=np.arange(self._qml_nside+1,3*self._qml_nside+1)
+            bl[self._qml_nside+1:3*self._qml_nside+1]=0.5*(1+np.sin(l*np.pi/2/self._qml_nside))
+            self._bell = bl
+        else:
+            self._fwhm = fwhm
+            bl=np.ones(3*self._qml_nside+1)
+            l=np.arange(self._qml_nside+1,3*self._qml_nside+1)
+            bl[self._qml_nside+1:3*self._qml_nside+1]=0.5*(1+np.sin(l*np.pi/2/self._qml_nside))
+            self._bell = bl*hp.gauss_beam(np.deg2rad(self._fwhm), lmax=3*self._qml_nside)
+
     @targets.setter
     def targets(self, targets):
         assert isinstance(targets, str)
         self._targets = targets
 
-    @pixwin.setter
-    def pixwin(self, targets):
-        assert isinstance(pixwin, bool)
-        self._pixwin = pixwin
         
         """"没有用到的变量"""
         #self.filt = filt
@@ -578,7 +590,7 @@ print("xQML pipeline  test")
 output_dir = "output"
 os.system("rm -rf "+output_dir)
 os.system("mkdir "+output_dir)
-nsimu = 20
+nsimu = 100
 ############################################################
 
 
@@ -614,15 +626,15 @@ mask=hp.read_map( "/home/jm/data/Data_common/Input_mask/AliCPT/I_Noise_95_G_512_
 
 
 ###################### Make bell ###########################
-bl=np.ones(lmax+1)
-l=np.arange(qml_nside+1,3*qml_nside+1)
-bl[qml_nside+1:3*qml_nside+1]=0.5*(1+np.sin(l*np.pi/2/qml_nside))
-bell = bl
+# bl=np.ones(lmax+1)
+# l=np.arange(qml_nside+1,3*qml_nside+1)
+# bl[qml_nside+1:3*qml_nside+1]=0.5*(1+np.sin(l*np.pi/2/qml_nside))
+# bell = bl
 ############################################################
 
 ################### Initialise xqml class ##################
 xqml_estimator=QMLestimator(nsimu=nsimu,clth=clth, nside=nside, qml_nside=qml_nside,noiseA=None, mask=mask, aposcale=aposcale, \
-                            lmin=lmin, lmax=lmax, lbin=lbin, targets=targets,  bell=bell)
+                            lmin=lmin, lmax=lmax, lbin=lbin, targets=targets,  fwhm=0.0)
 xqml_estimator.print_memory_fsky()
 ############################################################
 
