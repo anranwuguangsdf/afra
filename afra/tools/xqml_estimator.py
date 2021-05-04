@@ -16,7 +16,7 @@ import pymaster as nmt
 
 class QMLestimator(object):
 
-    def __init__(self, nsimu, clth, nside, qml_nside, aposcale=None, noiseA=None, noiseB=None, pixwin=False, mask=None,  \
+    def __init__(self, clth, qml_nside, aposcale=None, noiseA=None, noiseB=None, pixwin=False, mask=None,  \
                          lmin=None, lmax=None, lbin=None, targets='EB',muKarcmin=0.1, fwhm=0.0 ):
 
         """
@@ -55,9 +55,7 @@ class QMLestimator(object):
             If True, applies pixel window function to spectra. Default: True
         """
     # # Initialise basic parameters ##############################################################                     
-        self.nsimu      = nsimu
         self.lbin       = lbin
-        self.nside      = nside
         self.qml_nside  = qml_nside
         self.lmin       = lmin
         self.lmax       = lmax
@@ -83,36 +81,31 @@ class QMLestimator(object):
         self._modes=np.arange((3+self._lbin)/2.0, self._lmax, self._lbin)
         self._modes=self._modes[np.where(self._modes>self._lmin)]
         self._nmode=len(self._modes)
-        print(self._nmode,self._modes)
+        print()
+        print("nmode = %d"%self._nmode)
+        print("modes = ", self._modes)
     # # Initialise Noise Covariance ################################################################    
         self.noiseA = noiseA
         self.noiseB = noiseB        
         if noiseA != None:
-            self.qml_noiseA=degrade_maps(self._nsimu, self._nside, self._qml_nside, self.noiseA, self._pol, self._qml_mask)
+            self.qml_noiseA=degrade_maps(self._qml_nside, self.noiseA, self._pol, self._qml_mask)
             NA=get_maps_covariance(self.qml_noiseA, self._istokes, self._qml_mask)
         else:
             pixvar = muKarcmin2var(muKarcmin, self._qml_nside)
             varmap = np.ones((self._nstokes * self._qml_npix)) * pixvar
             NA = np.diag(varmap)
         if noiseB != None:
-            self.qml_noiseB=degrade_maps(self._nsimu, self._nside, self._qml_nside, self.noiseB, self._pol, self._qml_mask)
+            self.qml_noiseB=degrade_maps(self._qml_nside, self.noiseB, self._pol, self._qml_mask)
             NB=get_maps_covariance(self.qml_noiseB, self._istokes, self._qml_mask)
         else:
             NB=NA
 
         self.estimator=xqml.xQML(self._qml_mask,self._ellbins,self.clth,NA=NA,NB=NB,lmax=3*self._qml_nside,spec=self._spec,pixwin=self._pixwin,bell=self._bell,fwhm=0.0)
     
-    @property
-    def nsimu(self):
-        return self._nsimu
 
     @property
     def lbin(self):
         return self._lbin
-
-    @property
-    def nside(self):
-        return self._nside
 
     @property
     def qml_nside(self):
@@ -162,12 +155,6 @@ class QMLestimator(object):
     def modedict(self):
         return self._modedict
 
-    @nsimu.setter
-    def nsimu(self, nsimu):
-        assert isinstance(nsimu, int)
-        assert (nsimu > 0)
-        self._nsimu = nsimu
-
     @lbin.setter
     def lbin(self, lbin):
         if lbin is None:
@@ -176,13 +163,6 @@ class QMLestimator(object):
             assert isinstance(lbin, int)
             assert (lbin > 0)
             self._lbin = lbin
-
-    @nside.setter
-    def nside(self, nside):
-        assert isinstance(nside, int)
-        assert (nside > 0)
-        self._nside = nside
-        self._npix = 12*self._nside**2
 
     @qml_nside.setter
     def qml_nside(self, qml_nside):
@@ -204,10 +184,9 @@ class QMLestimator(object):
     @mask.setter
     def mask(self, mask):
         if mask is None:
-            self._mask = np.ones(self._npix,dtype=np.float64)
+            self._mask = np.ones(hp.nsdie2pix(self._qml_nside),dtype=np.bool)
         else:
             assert isinstance(mask, np.ndarray)
-            assert (len(mask) == self._npix)
             self._mask = mask.copy()
             self._mask = nmt.mask_apodization(self._mask, self._aposcale, apotype='C2')
             self._qml_mask=degrade_mask(self._qml_nside, self._mask)
@@ -332,17 +311,17 @@ class QMLestimator(object):
         # Should compute auto-spectra if map2 == None ?
         # Define conditions based on the map size
         """
+        print()
+        print("get spectrum from downgraded maps. ")
         allcl = []
         nsimu=min(mapsA.shape[0],mapsB.shape[0]) if mapsB != () else mapsA.shape[0]
         if mapsB != ():
             for n in np.arange(nsimu):
-                progress_bar(n, nsimu)
                 mapA=mapsA[n]
                 mapB=mapsB[n]
                 allcl.append(self.estimator.get_spectra(mapA,mapB))
         else:
             for n in np.arange(nsimu):
-                progress_bar(n, nsimu)
                 mapA=mapsA[n]
                 allcl.append(self.estimator.get_spectra(mapA))
 
@@ -368,11 +347,12 @@ class QMLestimator(object):
         # Should compute auto-spectra if map2 == None ?
         # Define conditions based on the map size
         """
+        print()
+        print("get spectrum from downgraded maps. ")
         allcl = []
         nsimu = mapsA.shape[0] 
         
         for n in np.arange(nsimu):
-            progress_bar(n, nsimu)
             mapA=mapsA[n]
             allcl.append(self.estimator.get_spectra(mapA))
 
@@ -399,11 +379,12 @@ class QMLestimator(object):
         # Should compute auto-spectra if map2 == None ?
         # Define conditions based on the map size
         """
+        print()
+        print("get spectrum from downgraded maps. ")
         allcl = []
         nsimu=min(mapsA.shape[0],mapsB.shape[0]) if mapsB != () else mapsA.shape[0]
         if mapsB != ():
             for n in np.arange(nsimu):
-                progress_bar(n, nsimu)
                 mapA=mapsA[n]
                 mapB=mapsB[n]
                 allcl.append(self.estimator.get_spectra(mapA,mapB))
@@ -415,7 +396,7 @@ class QMLestimator(object):
         return hcl
 
 
-def degrade_maps(nsimu, nside, qml_nside, maps_dir, pol, qml_mask=None):
+def degrade_maps(qml_nside, maps_in, pol, qml_mask=None):
     """cut high multipoles of input map and degrade it to low resolution
     Parameters
     ----------
@@ -436,16 +417,35 @@ def degrade_maps(nsimu, nside, qml_nside, maps_dir, pol, qml_mask=None):
         Return a degrade maps with Nside = qml_nside
     """
     print()
-    print("degrade maps to Nside = %d"%qml_nside)
+    print("down grade maps to Nside = %d"%qml_nside)
+    print(maps_in.shape)
+    if len(maps_in.shape) ==2:
+        nsimu=1
+        maps_in=np.array([maps_in])
+    else:
+        nsimu=maps_in.shape[0]
+    nside=hp.npix2nside(maps_in.shape[-1])
+    Slmax_old=3*nside
+    Slmax_new=3*qml_nside
+    print("nsimu = %d"%nsimu)
+    print("nside = %d"%nside)
+
+    npix= hp.nside2npix(qml_nside)
+    if qml_mask == ():
+        qml_mask=np.ones(npix,bool)
+    else:
+        if npix != len(qml_mask):
+            print("The nside of qml_mask inconsistent with qml_nside.")
+
     ALM = hp.Alm
     maps=[]
     for n in np.arange(nsimu):
         progress_bar(n, nsimu)
         n1=n+1
         #map_out = hp.read_map(maps_dir+"%d.fits"%n1,field=(0,1,2),dtype=float,verbose=0)
-        map_in = hp.read_map(maps_dir+"%d.fits"%n1,field=(0,1,2),dtype=np.float64,verbose=0)
-        Slmax_old=3*nside
-        Slmax_new=3*qml_nside
+        #map_in = hp.read_map(maps_dir+"%d.fits"%n1,field=(0,1,2),dtype=np.float64,verbose=0)
+        map_in=maps_in[n]
+        
         alm_old=hp.map2alm(map_in,lmax=Slmax_old,pol=pol,use_weights=True,iter=3)
         alm_new=np.zeros_like(np.array(alm_old)[:,:ALM.getsize(Slmax_new)])
         for l in np.arange(Slmax_new+1) :
@@ -457,13 +457,8 @@ def degrade_maps(nsimu, nside, qml_nside, maps_dir, pol, qml_mask=None):
                 elif l<=Slmax_new:
                     alm_new[:,idx_new]=alm_old[:,idx_old]*0.5*(1+np.sin(l*np.pi/2/qml_nside))
         map_out = hp.alm2map(alm_new, nside= qml_nside, pixwin=False) 
-        
-        if qml_mask != ():
-            npix= hp.nside2npix(qml_nside)
-            if npix == len(qml_mask):
-                map_out = map_out*qml_mask
-            else:
-                print("The nside of qml_mask inconsistent with qml_nside.")
+        map_out = map_out*qml_mask
+
 
         # hp.write_map(output_dir+"/map_out_%d.fits"%n1,map_out,dtype=np.float64)
         # hp.mollview(map_out[1], cmap=plt.cm.jet, title='Q map output')
@@ -590,7 +585,7 @@ print("xQML pipeline  test")
 output_dir = "output"
 os.system("rm -rf "+output_dir)
 os.system("mkdir "+output_dir)
-nsimu = 100
+nsimu = 10
 ############################################################
 
 
@@ -600,7 +595,6 @@ targets='EB'
 nside=512
 qml_nside=32
 mapsA_dir = "/home/jm/data/Data_common/TQUmaps/r0_05_lmax1024/cmb"
-lmin=20
 lmax = 3* qml_nside
 lbin=11
 aposcale=2
@@ -633,8 +627,8 @@ mask=hp.read_map( "/home/jm/data/Data_common/Input_mask/AliCPT/I_Noise_95_G_512_
 ############################################################
 
 ################### Initialise xqml class ##################
-xqml_estimator=QMLestimator(nsimu=nsimu,clth=clth, nside=nside, qml_nside=qml_nside,noiseA=None, mask=mask, aposcale=aposcale, \
-                            lmin=lmin, lmax=lmax, lbin=lbin, targets=targets,  fwhm=0.0)
+xqml_estimator=QMLestimator(clth=clth, qml_nside=qml_nside,noiseA=None, mask=mask, aposcale=aposcale, \
+                            lmax=lmax, lbin=lbin, targets=targets,  fwhm=0.0)
 xqml_estimator.print_memory_fsky()
 ############################################################
 
@@ -643,7 +637,8 @@ xqml_estimator.print_memory_fsky()
 # start = timeit.default_timer()
 # print(xqml_estimator.nsimu,xqml_estimator.nside, xqml_estimator.qml_nside, mapsA_dir)
 # print(xqml_estimator.pol, xqml_estimator.qml_mask)
-mapsA=degrade_maps(xqml_estimator.nsimu, xqml_estimator.nside, xqml_estimator.qml_nside, mapsA_dir, xqml_estimator.pol, xqml_estimator.qml_mask)
+mapsA_in=read_maps(nsimu, mapsA_dir)
+mapsA=degrade_maps(xqml_estimator.qml_nside, mapsA_in, xqml_estimator.pol, xqml_estimator.qml_mask)
 # print()
 # print("mapsA.shape = ",mapsA.shape)
 #cl=xqml_estimator.get_spectra(mapsA)
